@@ -1,0 +1,4 @@
+packages:
+  - 'src/shared'
+  - 'src/main'
+  - 'src/renderer'

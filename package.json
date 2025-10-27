@@ -1,0 +1,90 @@
+{
+  "name": "zen-browser",
+  "version": "0.1.0",
+  "description": "Zen Browser - A minimal, distraction-free browser built with Electron, React, and TypeScript",
+  "type": "module",
+  "private": true,
+  "author": {
+    "name": "Your Name",
+    "email": "your.email@example.com"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/yourusername/zen-browser",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/zen-browser.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/zen-browser/issues"
+  },
+  "workspaces": [
+    "src/shared",
+    "src/main",
+    "src/renderer"
+  ],
+  "scripts": {
+    "dev": "concurrently \"pnpm:dev:main\" \"pnpm:dev:renderer\"",
+    "dev:main": "cd src/main && vite build --watch",
+    "dev:renderer": "cd src/renderer && vite",
+    "build": "npm run build:shared && npm run build:main && npm run build:renderer",
+    "build:shared": "cd src/shared && tsc",
+    "build:main": "cd src/main && vite build",
+    "build:renderer": "cd src/renderer && vite build",
+    "preview": "cd src/renderer && vite preview",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css}\"",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "clear": "clear;clear"
+  },
+  "dependencies": {
+    "electron": "^38.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zustand": "^4.4.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.10.6",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.2",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "jest": "^30.2.0",
+    "postcss": "^8.4.32",
+    "prettier": "^3.1.1",
+    "tailwindcss": "^4.0.0-alpha.9",
+    "ts-jest": "^29.4.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
+  },
+  "pnpm": {
+    "overrides": {
+      "typescript": "^5.3.3"
+    },
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild",
+      "unrs-resolver"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@10.19.0"
+}

@@ -8,7 +8,7 @@
 import { ValidationError } from '../errors';
 
 /**
- * Zen 브라우저에서 허용하는 URL 프로토콜 화이트리스트
+ * Aside 브라우저에서 허용하는 URL 프로토콜 화이트리스트
  */
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'file:', 'blob:', 'data:']);
 
@@ -25,7 +25,7 @@ export function isValidUrl(url: string): boolean {
 }
 
 /**
- * URL 검증 - Zen 브라우저 호환성 포함
+ * URL 검증 - Aside 브라우저 호환성 포함
  *
  * - 기본 URL 형식 검증
  * - 프로토콜 화이트리스트 확인

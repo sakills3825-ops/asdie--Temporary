@@ -1,20 +1,43 @@
 /**
  * Security 모듈 export index
  *
- * Main/Renderer에서 다음과 같이 사용:
- * - import { generateCspHeader, CSP_POLICY } from '@shared/security'
- * - import { CORS_CONFIG, isOriginAllowed } from '@shared/security'
- * - import { RateLimiter, RATE_LIMITS } from '@shared/security'
- * - import { hasPermission, Permission } from '@shared/security'
+ * P0 구현:
+ * - CORS: Origin 검증 강화 (normalizeOrigin, 우회 벡터 방지)
+ * - CSP: 강한 정책 (unsafe-inline/eval 제거)
+ * - Authorization: Principal 기반 권한 검증
+ * - Rate Limiting: 슬라이딩 윈도우 방식
+ * - Error Filtering: 민감 정보 제거
+ *
+ * Main/Renderer에서 사용:
+ * - import { normalizeOrigin, isOriginAllowed, getCorsHeaders } from '@shared/security'
+ * - import { generateCspHeader, generateCspMetaTag } from '@shared/security'
+ * - import { hasPermission, Principal, Role } from '@shared/security'
+ * - import { RateLimiter, createRateLimiter } from '@shared/security'
  */
 
-export { CSP_POLICY, generateCspHeader, generateCspMetaTag } from './csp';
-export type { CspViolationReport } from './csp';
+// ===== CORS (P0: Origin Validation) =====
+export {
+  CORS_CONFIG,
+  normalizeOrigin,
+  isOriginAllowed,
+  getCorsHeaders,
+  handleCorsPreFlight,
+} from './cors';
+export type { CorsConfig } from './cors';
 
-export { CORS_CONFIG, isOriginAllowed, getCorsHeaders, handleCorsPreFlight } from './cors';
+// ===== CSP (P0: Content Security Policy) =====
+export {
+  CSP_POLICY,
+  generateCspHeader,
+  generateCspMetaTag,
+  isValidCspViolationReport,
+} from './csp';
+export type { CspPolicy, CspViolationReport } from './csp';
 
+// ===== Rate Limiting (P0: DoS Prevention) =====
 export { RATE_LIMITS, RateLimiter, createRateLimiter } from './rateLimiting';
 
+// ===== Authorization (P0: Permission-based Access Control) =====
 export {
   Permission,
   Role,

@@ -6,18 +6,21 @@
  */
 
 import { ERROR_CODES, type ErrorCode } from '../constants';
+import type { SerializableRecord } from '../types/constraints';
 
 export class BaseError extends Error {
   public readonly code: ErrorCode;
   public readonly statusCode: number;
   public readonly timestamp: Date;
-  public readonly context?: Record<string, unknown>;
+  public readonly context?: SerializableRecord; // 직렬화 가능한 타입만
+  public readonly cause?: Error; // ES2022: 에러 체인 지원
 
   constructor(
     message: string,
     code: ErrorCode = ERROR_CODES.UNKNOWN,
     statusCode: number = 500,
-    context?: Record<string, unknown>
+    context?: SerializableRecord,
+    cause?: Error
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -26,6 +29,9 @@ export class BaseError extends Error {
     this.timestamp = new Date();
     if (context !== undefined) {
       this.context = context;
+    }
+    if (cause !== undefined) {
+      this.cause = cause;
     }
 
     // 프로토타입 체인 설정 (instanceof 작동)
@@ -39,6 +45,9 @@ export class BaseError extends Error {
 
   /**
    * 에러를 JSON으로 직렬화
+   * 
+   * IPC 전송, 로깅, 외부 API 응답 등에 사용.
+   * Stack trace와 cause를 포함하여 디버깅 정보 보존.
    */
   toJSON() {
     return {
@@ -48,17 +57,54 @@ export class BaseError extends Error {
       statusCode: this.statusCode,
       timestamp: this.timestamp.toISOString(),
       context: this.context,
+      stack: this.stack, // Stack trace 포함
+      cause: this.cause
+        ? {
+            name: this.cause.name,
+            message: this.cause.message,
+            stack: this.cause.stack,
+          }
+        : undefined,
     };
   }
 
   /**
-   * 에러를 IPC 응답으로 변환
+   * 클라이언트에 안전하게 노출할 에러 정보
+   * 
+   * 민감한 정보(context, stack trace)를 제거한 버전.
+   * Renderer나 외부 API에 전달할 때 사용.
    */
-  toIpcError() {
+  toClientResponse() {
     return {
       error: this.message,
       code: this.code,
       statusCode: this.statusCode,
+      // context, stack, cause 제외 (보안)
+    };
+  }
+
+  /**
+   * 내부 로깅용 전체 정보
+   * 
+   * Main process 로그, 디버깅, 에러 추적에 사용.
+   * 모든 정보 포함.
+   */
+  toInternalLog() {
+    return {
+      name: this.name,
+      message: this.message,
+      code: this.code,
+      statusCode: this.statusCode,
+      timestamp: this.timestamp.toISOString(),
+      context: this.context,
+      stack: this.stack,
+      cause: this.cause
+        ? {
+            name: this.cause.name,
+            message: this.cause.message,
+            stack: this.cause.stack,
+          }
+        : undefined,
     };
   }
 }

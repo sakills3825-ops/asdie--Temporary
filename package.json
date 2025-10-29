@@ -1,11 +1,11 @@
 {
-  "name": "zen-browser",
+  "name": "aside",
   "version": "0.1.0",
-  "description": "Zen Browser - A minimal, distraction-free browser built with Electron, React, and TypeScript",
+  "description": "Aside - 게임과 브라우저를 하나로 ",
   "type": "module",
   "private": true,
   "author": {
-    "name": "Your Name",
+    "name": "aside",
     "email": "your.email@example.com"
   },
   "license": "MIT",
@@ -23,13 +23,16 @@
     "src/renderer"
   ],
   "scripts": {
+    "postinstall": "prisma generate",
+    "predev": "prisma migrate dev --skip-generate 2>/dev/null || true",
     "dev": "concurrently \"pnpm:dev:main\" \"pnpm:dev:renderer\"",
     "dev:main": "cd src/main && vite build --watch",
     "dev:renderer": "cd src/renderer && vite",
-    "build": "npm run build:shared && npm run build:main && npm run build:renderer",
+    "build": "pnpm run build:shared && pnpm run build:main && pnpm run build:renderer",
     "build:shared": "cd src/shared && tsc",
     "build:main": "cd src/main && vite build",
     "build:renderer": "cd src/renderer && vite build",
+    "build:prod": "pnpm run type-check && pnpm run lint && pnpm run build",
     "preview": "cd src/renderer && vite preview",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
@@ -39,12 +42,21 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:prod": "prisma migrate deploy --skip-generate",
+    "db:reset": "prisma migrate reset",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
     "clear": "clear;clear"
   },
   "dependencies": {
+    "@prisma/client": "^6.0.0",
     "electron": "^38.0.0",
+    "electron-store": "^8.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "zod": "^4.1.12",
     "zustand": "^4.4.1"
   },
   "devDependencies": {
@@ -55,6 +67,7 @@
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/ui": "^4.0.4",
     "autoprefixer": "^10.4.16",
     "concurrently": "^8.2.2",
     "eslint": "^8.56.0",
@@ -66,19 +79,25 @@
     "jest": "^30.2.0",
     "postcss": "^8.4.32",
     "prettier": "^3.1.1",
+    "prisma": "^6.0.0",
     "tailwindcss": "^4.0.0-alpha.9",
     "ts-jest": "^29.4.5",
     "tsx": "^4.20.6",
     "typescript": "^5.3.3",
-    "vite": "^5.0.10"
+    "vite": "^5.0.10",
+    "vitest": "^4.0.4"
   },
   "pnpm": {
     "overrides": {
       "typescript": "^5.3.3"
     },
     "onlyBuiltDependencies": [
+      "@prisma/cli",
+      "@prisma/client",
+      "@prisma/engines",
       "electron",
       "esbuild",
+      "prisma",
       "unrs-resolver"
     ]
   },

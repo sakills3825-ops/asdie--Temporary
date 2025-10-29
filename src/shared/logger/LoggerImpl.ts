@@ -21,12 +21,23 @@ import { LogFields, LogFieldsBuilder, formatLogFields } from './fields';
  * - 구조화된 로깅 (JSON 형식)
  * - 콘솔 출력 (컬러 포함)
  * - 스택 트레이스 자동 수집
+ * - 성능 최적화: 정규식 캐싱, 스택 트레이스 캐싱
  */
 export class LoggerImpl implements ILogger {
   private readonly loggerName: string;
   private currentLevel: LogLevel;
   private processType: 'main' | 'renderer';
   private outputs: ((fields: LogFields) => void)[] = [];
+
+  // 성능 최적화: 정규식 미리 컴파일
+  private static readonly FILE_REGEX = /\((.+?):(\d+):(\d+)\)/;
+  private static readonly LINE_REGEX = /:(\d+):/;
+  private static readonly FUNCTION_REGEX = /at\s+([a-zA-Z0-9_$.<>]+)/;
+
+  // 성능 최적화: 스택 트레이스 캐싱 (호출자별)
+  // 키: 스택 라인 문자열, 값: { file, line, function }
+  private readonly stackCache = new Map<string, { file?: string; line?: number; fn?: string }>();
+  private readonly MAX_CACHE_SIZE = 1000;
 
   /**
    * Logger 생성
@@ -223,17 +234,32 @@ export class LoggerImpl implements ILogger {
   /**
    * 소스 파일 추출 (스택 트레이스에서)
    *
-   * 간단한 구현: 정확한 파일명 추출은 V8 stack API 필요
+   * 성능 최적화: 스택 트레이스 라인을 캐싱하여 반복 계산 방지
    */
   private getSourceFile(): string | undefined {
     try {
       const stack = new Error().stack || '';
       const lines = stack.split('\n');
       if (lines.length > 3 && lines[3]) {
-        const match = lines[3].match(/\((.+?):(\d+):(\d+)\)/);
-        if (match?.[1]) {
-          return match[1];
+        const stackLine = lines[3];
+
+        // 캐시 확인
+        if (this.stackCache.has(stackLine)) {
+          return this.stackCache.get(stackLine)?.file;
         }
+
+        const match = stackLine.match(LoggerImpl.FILE_REGEX);
+        const file = match?.[1];
+
+        // 캐시 저장 (크기 제한 포함)
+        if (this.stackCache.size < this.MAX_CACHE_SIZE) {
+          const cached = this.stackCache.get(stackLine) || {};
+          if (file !== undefined) {
+            this.stackCache.set(stackLine, { ...cached, file });
+          }
+        }
+
+        return file;
       }
     } catch {
       // 무시
@@ -243,16 +269,31 @@ export class LoggerImpl implements ILogger {
 
   /**
    * 소스 라인번호 추출
+   *
+   * 성능 최적화: 캐시된 값 사용
    */
   private getSourceLine(): number | undefined {
     try {
       const stack = new Error().stack || '';
       const lines = stack.split('\n');
       if (lines.length > 3 && lines[3]) {
-        const match = lines[3].match(/:(\d+):/);
-        if (match?.[1]) {
-          return parseInt(match[1], 10);
+        const stackLine = lines[3];
+
+        // 캐시 확인
+        if (this.stackCache.has(stackLine)) {
+          return this.stackCache.get(stackLine)?.line;
         }
+
+        const match = stackLine.match(LoggerImpl.LINE_REGEX);
+        const line = match?.[1] ? parseInt(match[1], 10) : undefined;
+
+        // 캐시 저장 (크기 제한 포함)
+        if (this.stackCache.size < this.MAX_CACHE_SIZE && line !== undefined) {
+          const cached = this.stackCache.get(stackLine) || {};
+          this.stackCache.set(stackLine, { ...cached, line });
+        }
+
+        return line;
       }
     } catch {
       // 무시
@@ -262,17 +303,32 @@ export class LoggerImpl implements ILogger {
 
   /**
    * 함수명 추출
+   *
+   * 성능 최적화: 캐시된 값 사용, 정규식 미리 컴파일
    */
   private getSourceFunction(): string | undefined {
     try {
       const stack = new Error().stack || '';
       const lines = stack.split('\n');
       if (lines.length > 3 && lines[3]) {
-        // 함수명은 보통 "at functionName" 형식
-        const match = lines[3].match(/at\s+([a-zA-Z0-9_$.<>]+)/);
-        if (match?.[1]) {
-          return match[1];
+        const stackLine = lines[3];
+
+        // 캐시 확인
+        if (this.stackCache.has(stackLine)) {
+          return this.stackCache.get(stackLine)?.fn;
         }
+
+        // 함수명은 보통 "at functionName" 형식
+        const match = stackLine.match(LoggerImpl.FUNCTION_REGEX);
+        const func = match?.[1];
+
+        // 캐시 저장 (크기 제한 포함)
+        if (this.stackCache.size < this.MAX_CACHE_SIZE && func !== undefined) {
+          const cached = this.stackCache.get(stackLine) || {};
+          this.stackCache.set(stackLine, { ...cached, fn: func });
+        }
+
+        return func;
       }
     } catch {
       // 무시

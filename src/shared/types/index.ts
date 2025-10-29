@@ -22,3 +22,38 @@ export type {
   FileDialogOptions,
   AppInfo,
 } from './domain';
+
+// ===== 타입 제약 조건 =====
+export type {
+  JsonPrimitive,
+  JsonObject,
+  JsonArray,
+  JsonValue,
+  Serializable,
+  SerializableRecord,
+  TabId,
+  UserId,
+  HistoryId,
+  BookmarkId,
+  WindowId,
+  ChannelName,
+  FilePath,
+  ValidatedUrl,
+  Timestamp,
+} from './constraints';
+
+export {
+  createTabId,
+  createUserId,
+  createHistoryId,
+  createBookmarkId,
+  createWindowId,
+  createChannelName,
+  createFilePath,
+  createValidatedUrl,
+  createTimestamp,
+  unwrapBrand,
+  isSerializable,
+  ensureSerializable,
+  isSerializableRecord,
+} from './constraints';

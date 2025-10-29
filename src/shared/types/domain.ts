@@ -7,15 +7,19 @@
 
 /**
  * 브라우저 탭 정보
+ * 
+ * Prisma BrowserTab 모델과 일치
  */
 export interface BrowserTab {
   id: string;
   title: string;
   url: string;
-  favicon?: string;
+  favicon?: string | null;
   isActive: boolean;
-  createdAt: number;
-  updatedAt: number;
+  isMuted: boolean;
+  isPinned: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**

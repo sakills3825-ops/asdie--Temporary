@@ -33,7 +33,7 @@ import * as os from 'os';
  * - Zen 구현: 경량화 목표, 약 25-35MB로 추정
  * - 보수적 계산: 40MB로 설정 (최악의 경우)
  */
-const MEMORY_PER_TAB_MB = 40;
+export const MEMORY_PER_TAB_MB = 40;
 
 /**
  * 동적 최대 탭 계산
@@ -60,10 +60,13 @@ export function calculateMaxTabs(totalMemoryMB?: number, currentUsagePercent?: n
   const total = totalMemoryMB || Math.round(os.totalmem() / 1024 / 1024);
 
   // 현재 사용률 계산 (0-100)
-  let usagePercent = currentUsagePercent ?? 0;
-  if (!currentUsagePercent) {
+  // ⚠️ FIX: currentUsagePercent가 0일 때도 명시적 값으로 취급
+  let usagePercent: number;
+  if (currentUsagePercent === undefined) {
     const used = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
     usagePercent = (used / total) * 100;
+  } else {
+    usagePercent = currentUsagePercent;
   }
 
   // 실제 사용 가능한 메모리 = 총메모리 - 현재사용 - OS예약(10%)

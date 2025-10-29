@@ -1,0 +1,285 @@
+/**
+ * TabHandler - 탭 IPC 핸들러
+ *
+ * 책임: IPC 요청을 받아서 TabService로 라우팅
+ * - tab:createNew
+ * - tab:close
+ * - tab:select
+ * - tab:update
+ * - tab:getAll
+ * - tab:duplicate
+ * - tab:mute
+ * - tab:pin
+ *
+ * SRP 원칙: IPC 요청 처리와 라우팅만 담당
+ * 비즈니스 로직은 TabService에 위임
+ */
+
+import { ipcMain } from 'electron';
+import { LoggerImpl, type ILogger, LogLevel } from '../../shared/logger';
+import { IPC_CHANNELS } from '../../shared/ipc/channels';
+import {
+  TabCreateRequestSchema,
+  TabUpdateRequestSchema,
+  TabIdRequestSchema,
+} from '../../shared/ipc/validators';
+
+/**
+ * TabService 인터페이스 (Phase 4에서 구현)
+ */
+export interface TabUpdateRequest {
+  title?: string | undefined;
+  url?: string | undefined;
+  isActive?: boolean | undefined;
+  isLoading?: boolean | undefined;
+}
+
+export interface ITabService {
+  createTab(url: string, title?: string): Promise<{ id: string; url: string; title: string }>;
+  closeTab(tabId: string): Promise<void>;
+  selectTab(tabId: string): Promise<void>;
+  updateTab(tabId: string, updates: TabUpdateRequest): Promise<{ id: string; url: string; title: string }>;
+  getAllTabs(): Promise<Array<{ id: string; url: string; title: string }>>;
+  duplicateTab(tabId: string): Promise<{ id: string; url: string; title: string }>;
+  muteTab(tabId: string): Promise<void>;
+  pinTab(tabId: string): Promise<void>;
+}
+
+/**
+ * 탭 IPC 핸들러
+ */
+export class TabHandler {
+  private logger: ILogger;
+
+  constructor(private tabService: ITabService) {
+    this.logger = new LoggerImpl('TabHandler', LogLevel.INFO);
+  }
+
+  /**
+   * 모든 탭 IPC 핸들 등록
+   */
+  public registerHandlers(): void {
+    this.logger.info('TabHandler: Registering handlers');
+
+    // 새 탭 생성
+    ipcMain.handle(IPC_CHANNELS.tabCreateNew, (_event, url: string, title?: string) =>
+      this.handleCreateTab(url, title)
+    );
+
+    // 탭 닫기
+    ipcMain.handle(IPC_CHANNELS.tabClose, (_event, tabId: string) => this.handleCloseTab(tabId));
+
+    // 탭 선택
+    ipcMain.handle(IPC_CHANNELS.tabSelect, (_event, tabId: string) => this.handleSelectTab(tabId));
+
+    // 탭 정보 업데이트
+    ipcMain.handle(IPC_CHANNELS.tabUpdate, (_event, tabId: string, updates: TabUpdateRequest) =>
+      this.handleUpdateTab(tabId, updates)
+    );
+
+    // 모든 탭 조회
+    ipcMain.handle(IPC_CHANNELS.tabGetAll, () => this.handleGetAllTabs());
+
+    // 탭 복제
+    ipcMain.handle(IPC_CHANNELS.tabDuplicate, (_event, tabId: string) =>
+      this.handleDuplicateTab(tabId)
+    );
+
+    // 탭 음소거
+    ipcMain.handle(IPC_CHANNELS.tabMute, (_event, tabId: string) => this.handleMuteTab(tabId));
+
+    // 탭 고정
+    ipcMain.handle(IPC_CHANNELS.tabPin, (_event, tabId: string) => this.handlePinTab(tabId));
+
+    this.logger.info('TabHandler: Handlers registered successfully');
+  }
+
+  /**
+   * 새 탭 생성 핸들러
+   */
+  private async handleCreateTab(url: string, title: string = '') {
+    try {
+      // 입력값 검증
+      const validated = TabCreateRequestSchema.parse({
+        url,
+        title: title || undefined,
+      });
+
+      this.logger.info('TabHandler: Creating tab', {
+        module: 'TabHandler',
+        metadata: { url: validated.url },
+      });
+
+      const tab = await this.tabService.createTab(validated.url, validated.title);
+      return { success: true, data: tab };
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error('TabHandler: Failed to create tab', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * 탭 닫기 핸들러
+   */
+  private async handleCloseTab(tabId: string) {
+    try {
+      // 입력값 검증
+      const validated = TabIdRequestSchema.parse({ tabId });
+
+      this.logger.info('TabHandler: Closing tab', {
+        module: 'TabHandler',
+        metadata: { tabId: validated.tabId },
+      });
+
+      await this.tabService.closeTab(validated.tabId);
+      return { success: true };
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error('TabHandler: Failed to close tab', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * 탭 선택 핸들러
+   */
+  private async handleSelectTab(tabId: string) {
+    try {
+      // 입력값 검증
+      const validated = TabIdRequestSchema.parse({ tabId });
+
+      this.logger.info('TabHandler: Selecting tab', {
+        module: 'TabHandler',
+        metadata: { tabId: validated.tabId },
+      });
+
+      await this.tabService.selectTab(validated.tabId);
+      return { success: true };
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error('TabHandler: Failed to select tab', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * 탭 정보 업데이트 핸들러
+   */
+  private async handleUpdateTab(tabId: string, updates: TabUpdateRequest) {
+    try {
+      // 입력값 검증
+      const validated = TabUpdateRequestSchema.parse({ tabId, updates });
+
+      this.logger.info('TabHandler: Updating tab', {
+        module: 'TabHandler',
+        metadata: { tabId: validated.tabId },
+      });
+
+      const tab = await this.tabService.updateTab(validated.tabId, validated.updates);
+      return { success: true, data: tab };
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error('TabHandler: Failed to update tab', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * 모든 탭 조회 핸들러
+   */
+  private async handleGetAllTabs() {
+    try {
+      this.logger.info('TabHandler: Getting all tabs');
+
+      const tabs = await this.tabService.getAllTabs();
+      return { success: true, data: tabs };
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error('TabHandler: Failed to get all tabs', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * 탭 복제 핸들러
+   */
+  private async handleDuplicateTab(tabId: string) {
+    try {
+      // 입력값 검증
+      const validated = TabIdRequestSchema.parse({ tabId });
+
+      this.logger.info('TabHandler: Duplicating tab', {
+        module: 'TabHandler',
+        metadata: { tabId: validated.tabId },
+      });
+
+      const tab = await this.tabService.duplicateTab(validated.tabId);
+      return { success: true, data: tab };
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error('TabHandler: Failed to duplicate tab', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * 탭 음소거 핸들러
+   */
+  private async handleMuteTab(tabId: string) {
+    try {
+      // 입력값 검증
+      const validated = TabIdRequestSchema.parse({ tabId });
+
+      this.logger.info('TabHandler: Muting tab', {
+        module: 'TabHandler',
+        metadata: { tabId: validated.tabId },
+      });
+
+      await this.tabService.muteTab(validated.tabId);
+      return { success: true };
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error('TabHandler: Failed to mute tab', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * 탭 고정 핸들러
+   */
+  private async handlePinTab(tabId: string) {
+    try {
+      // 입력값 검증
+      const validated = TabIdRequestSchema.parse({ tabId });
+
+      this.logger.info('TabHandler: Pinning tab', {
+        module: 'TabHandler',
+        metadata: { tabId: validated.tabId },
+      });
+
+      await this.tabService.pinTab(validated.tabId);
+      return { success: true };
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.logger.error('TabHandler: Failed to pin tab', err);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * 모든 핸들러 등록 해제
+   */
+  public unregisterHandlers(): void {
+    ipcMain.removeAllListeners(IPC_CHANNELS.tabCreateNew);
+    ipcMain.removeAllListeners(IPC_CHANNELS.tabClose);
+    ipcMain.removeAllListeners(IPC_CHANNELS.tabSelect);
+    ipcMain.removeAllListeners(IPC_CHANNELS.tabUpdate);
+    ipcMain.removeAllListeners(IPC_CHANNELS.tabGetAll);
+    ipcMain.removeAllListeners(IPC_CHANNELS.tabDuplicate);
+    ipcMain.removeAllListeners(IPC_CHANNELS.tabMute);
+    ipcMain.removeAllListeners(IPC_CHANNELS.tabPin);
+
+    this.logger.info('TabHandler: Handlers unregistered');
+  }
+}

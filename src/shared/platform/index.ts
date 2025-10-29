@@ -42,3 +42,33 @@ export type {
   FeatureSupport,
   EnvironmentSettings,
 } from './environment';
+
+export {
+  getPlatformSafe,
+  getArchSafe,
+  getWindowsAppDataPath,
+  getMacOSAppSupportPath,
+  getLinuxDataPath,
+  getAppDataDir,
+  getLogsDir,
+  getCacheDir,
+  createTempDirSafe,
+  removeDirSafe,
+} from './environment-safety';
+export type { Platform as PlatformType, Arch } from './environment-safety';
+
+export {
+  isPathTraversal,
+  isPathInBounds,
+  joinSafePath,
+  getRealPath,
+  isSymlink,
+  safeReadFile,
+  getFilePermissions,
+  getFileOwner,
+  isPermissionTooPermissive,
+  validateConfigFilePermissions,
+  safeEnsureDirectory,
+  safeWriteFile,
+  SafePath,
+} from './path-safety';

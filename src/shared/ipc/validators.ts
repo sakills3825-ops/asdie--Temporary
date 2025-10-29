@@ -3,8 +3,14 @@
  *
  * Main/Renderer 간 통신 시 채널이 유효한지 런타임에 확인.
  * 잘못된 채널 접근 방지 + 보안
+ *
+ * Zod 검증 스키마 추가:
+ * - Tab 요청 검증
+ * - History 요청 검증
+ * - Bookmark 요청 검증
  */
 
+import { z } from 'zod';
 import { IPC_CHANNELS, IpcChannel } from './channels';
 
 /**
@@ -79,3 +85,93 @@ export function getChannelsByDomain(domain: string): IpcChannel[] {
 export function isIpcInDomain(channel: IpcChannel, domain: string): boolean {
   return getIpcDomain(channel) === domain;
 }
+
+/**
+ * ==========================================
+ * ZOD 검증 스키마 (런타임 입력값 검증)
+ * ==========================================
+ */
+
+// Tab 요청 검증 스키마
+export const TabCreateRequestSchema = z.object({
+  url: z.string().url('유효한 URL이 아닙니다'),
+  title: z.string().optional(),
+});
+
+export const TabUpdateRequestSchema = z.object({
+  tabId: z.string().min(1, 'Tab ID는 필수입니다'),
+  updates: z.object({
+    title: z.string().optional(),
+    url: z.string().url().optional(),
+    isActive: z.boolean().optional(),
+    isLoading: z.boolean().optional(),
+  }),
+});
+
+export const TabIdRequestSchema = z.object({
+  tabId: z.string().min(1, 'Tab ID는 필수입니다'),
+});
+
+// History 요청 검증 스키마
+export const HistoryEntrySchema = z.object({
+  url: z.string().url('유효한 URL이 아닙니다'),
+  title: z.string().optional(),
+  visitedAt: z.number().or(z.instanceof(Date)).optional(),
+  duration: z.number().optional(),
+  favicon: z.string().optional(),
+});
+
+export const HistorySearchRequestSchema = z.object({
+  query: z.string().min(1, '검색 쿼리는 필수입니다'),
+  limit: z.number().positive().optional(),
+});
+
+export const HistoryIdRequestSchema = z.object({
+  id: z.string().min(1, 'History ID는 필수입니다'),
+});
+
+export const HistoryDateRangeSchema = z.object({
+  startTime: z.number().positive(),
+  endTime: z.number().positive(),
+});
+
+// Bookmark 요청 검증 스키마
+export const BookmarkCreateRequestSchema = z.object({
+  url: z.string().url('유효한 URL이 아닙니다'),
+  title: z.string().min(1, '제목은 필수입니다'),
+  folder: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+});
+
+export const BookmarkUpdateRequestSchema = z.object({
+  id: z.string().min(1, 'Bookmark ID는 필수입니다'),
+  updates: z.object({
+    url: z.string().url().optional(),
+    title: z.string().optional(),
+    folder: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+  }),
+});
+
+export const BookmarkIdRequestSchema = z.object({
+  id: z.string().min(1, 'Bookmark ID는 필수입니다'),
+});
+
+export const BookmarkFolderRequestSchema = z.object({
+  folderName: z.string().min(1, '폴더명은 필수입니다'),
+});
+
+export const BookmarkSearchRequestSchema = z.object({
+  query: z.string().min(1, '검색 쿼리는 필수입니다'),
+});
+
+/**
+ * 타입 추출 (Zod 스키마에서 TypeScript 타입 생성)
+ */
+export type TabCreateRequest = z.infer<typeof TabCreateRequestSchema>;
+export type TabUpdateRequest = z.infer<typeof TabUpdateRequestSchema>;
+export type HistoryEntry = z.infer<typeof HistoryEntrySchema>;
+export type HistorySearchRequest = z.infer<typeof HistorySearchRequestSchema>;
+export type BookmarkCreateRequest = z.infer<typeof BookmarkCreateRequestSchema>;
+export type BookmarkUpdateRequest = z.infer<typeof BookmarkUpdateRequestSchema>;
+

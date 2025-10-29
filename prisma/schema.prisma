@@ -1,0 +1,247 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  // Prisma 6.0+에서 sqlite에 최적화됨
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// 현재 탭 정보 (메모리 + DB 동기화)
+// ============================================================
+/// 브라우저의 현재 활성 탭들
+/// - 탭 생성/삭제/업데이트
+/// - 활성 탭 추적
+/// - 탭 복원 정보
+model BrowserTab {
+  /// 탭 고유 식별자 (CUID)
+  id        String   @id @default(cuid())
+
+  /// 탭 URL
+  url       String
+
+  /// 탭 제목
+  title     String
+
+  /// 파비콘 URL (선택)
+  favicon   String?
+
+  /// 활성 탭 여부
+  isActive  Boolean  @default(false)
+
+  /// 음소거 여부
+  isMuted   Boolean  @default(false)
+
+  /// 고정 여부
+  isPinned  Boolean  @default(false)
+
+  /// 탭 생성 시간
+  createdAt DateTime @default(now())
+
+  /// 탭 마지막 업데이트 시간
+  updatedAt DateTime @updatedAt
+
+  // 성능 인덱스
+  @@index([url])
+  @@index([isActive])
+  @@index([updatedAt])
+}
+
+// ============================================================
+// 방문 기록 (히스토리)
+// ============================================================
+/// 웹 방문 기록 저장
+/// - URL, 제목, 방문 시간 저장
+/// - 최대 1000개 항목 유지
+/// - 시간 범위 검색 최적화
+model HistoryEntry {
+  /// 기록 고유 식별자
+  id        String   @id @default(cuid())
+
+  /// 방문한 URL
+  url       String
+
+  /// 페이지 제목
+  title     String
+
+  /// 방문 시간
+  visitedAt DateTime @default(now())
+
+  /// 방문 지속 시간 (밀리초)
+  duration  Int      @default(0)
+
+  /// 파비콘 (선택)
+  favicon   String?
+
+  /// 누적 방문 횟수 (같은 URL)
+  visits    Int      @default(1)
+
+  // 성능 인덱스
+  @@index([url])
+  @@index([visitedAt])
+  @@index([title])
+  /// 시간 범위 검색 최적화
+  @@index([visitedAt, url])
+}
+
+// ============================================================
+// 북마크 (즐겨찾기)
+// ============================================================
+/// 사용자 북마크 저장
+/// - URL, 제목, 폴더별 정렬
+/// - 태그를 통한 분류
+/// - 메타데이터 (파비콘, 설명)
+model Bookmark {
+  /// 북마크 고유 식별자
+  id        String   @id @default(cuid())
+
+  /// 북마크 URL (고유값)
+  url       String   @unique
+
+  /// 북마크 제목
+  title     String
+
+  /// 폴더명 (기본: "root")
+  folder    String   @default("root")
+
+  /// 생성 시간
+  createdAt DateTime @default(now())
+
+  /// 마지막 업데이트 시간
+  updatedAt DateTime @updatedAt
+
+  /// 파비콘 (선택)
+  favicon   String?
+
+  /// 설명/메모
+  description String?
+
+  /// 북마크 태그 (1:N 관계)
+  tags      BookmarkTag[]
+
+  // 성능 인덱스
+  @@index([folder])
+  @@index([createdAt])
+  @@index([url])
+}
+
+// ============================================================
+// 북마크 태그 (N:M 관계)
+// ============================================================
+/// 북마크에 연결된 태그
+/// - 하나의 북마크는 여러 태그를 가질 수 있음
+/// - 중복 태그 방지
+model BookmarkTag {
+  /// 태그 고유 식별자
+  id        String   @id @default(cuid())
+
+  /// 북마크 ID (외래키)
+  bookmarkId String
+
+  /// 북마크 (관계, Cascade delete)
+  bookmark  Bookmark @relation(fields: [bookmarkId], references: [id], onDelete: Cascade)
+
+  /// 태그명
+  name      String
+
+  /// 생성 시간
+  createdAt DateTime @default(now())
+
+  // 성능 인덱스
+  @@index([bookmarkId])
+  @@index([name])
+  /// 중복 태그 방지
+  @@unique([bookmarkId, name])
+}
+
+// ============================================================
+// 앱 설정 (싱글 로우 KV 스토어)
+// ============================================================
+/// 앱 전역 설정
+/// - 테마, 줌, 언어 등
+/// - 항상 1개 행만 존재 (id = "settings-1")
+model AppSettings {
+  /// 고정 ID (항상 "settings-1")
+  id        String   @id @default("settings-1")
+
+  /// 테마 설정 (light | dark | auto)
+  theme     String   @default("auto")
+
+  /// 줌 레벨 (0.5 - 3.0)
+  zoomLevel Float    @default(1.0)
+
+  /// 언어 코드 (en, ko, ja, etc.)
+  language  String   @default("en")
+
+  /// 시작 페이지 URL
+  startPage String   @default("about:blank")
+
+  /// 이전 세션 복원 여부
+  restorePreviousSession Boolean @default(true)
+
+  /// 알림 활성화
+  enableNotifications Boolean @default(true)
+
+  /// 쿠키 활성화
+  enableCookies Boolean @default(true)
+
+  /// 캐시 크기 (MB)
+  cacheSize Int      @default(500)
+
+  /// 히스토리 자동 삭제 기간 (일, 0 = 안 삭제)
+  historyAutoDeleteDays Int @default(0)
+
+  /// 마지막 업데이트 시간
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================
+// 세션 데이터 (앱 상태 스냅샷)
+// ============================================================
+/// 앱의 마지막 상태 저장
+/// - 활성 탭 목록
+/// - 윈도우 상태 (크기, 위치)
+/// - 복원 데이터
+model SessionData {
+  /// 고정 ID (항상 "session-1")
+  id        String   @id @default("session-1")
+
+  /// 마지막 활성 탭 ID
+  activeTabId String?
+
+  /// 마지막 닫기 전 열려있던 탭들 (JSON 배열)
+  /// 형식: [{id, url, title, isActive}, ...]
+  openTabs  String   @default("[]")
+
+  /// 마지막 활성화 윈도우 상태 (JSON)
+  /// 형식: {width, height, isMaximized, x, y}
+  windowState String?
+
+  /// 마지막 활성화 시간
+  lastActiveAt DateTime @default(now())
+
+  /// 업데이트 시간
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================
+// 마이그레이션 메타데이터 (내부용)
+// ============================================================
+/// Prisma 마이그레이션 추적
+/// - 실행된 마이그레이션 기록
+/// - 롤백 정보
+model MigrationLog {
+  /// 마이그레이션 고유 ID
+  id        String   @id @default(cuid())
+
+  /// 마이그레이션 이름
+  name      String   @unique
+
+  /// 실행 시간
+  executedAt DateTime @default(now())
+}

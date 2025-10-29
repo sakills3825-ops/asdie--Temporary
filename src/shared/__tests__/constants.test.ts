@@ -48,20 +48,20 @@ describe('Constants - System Optimization', () => {
     });
 
     test('should reduce tabs when memory usage is high (70%+)', () => {
-      const result70 = calculateMaxTabs(700, 1000); // 70% usage
-      const result30 = calculateMaxTabs(300, 1000); // 30% usage
+      const result70 = calculateMaxTabs(8000, 70); // 70% usage, 8GB
+      const result30 = calculateMaxTabs(8000, 30); // 30% usage, 8GB
       expect(result70).toBeLessThan(result30);
     });
 
     test('should reduce tabs more aggressively when usage > 70%', () => {
-      const result70 = calculateMaxTabs(700, 1000); // 70% boundary
-      const result71 = calculateMaxTabs(710, 1000); // 71% boundary
+      const result70 = calculateMaxTabs(8000, 70); // 70% boundary
+      const result71 = calculateMaxTabs(8000, 71); // 71% boundary
       expect(result71).toBeLessThanOrEqual(result70);
     });
 
     test('should reduce tabs further when usage > 50%', () => {
-      const result50 = calculateMaxTabs(500, 1000); // exactly 50%
-      const result60 = calculateMaxTabs(600, 1000); // 60%
+      const result50 = calculateMaxTabs(8000, 50); // exactly 50%
+      const result60 = calculateMaxTabs(8000, 60); // 60%
       expect(result60).toBeLessThan(result50);
     });
 

@@ -99,6 +99,7 @@ describe('MemoryEnforcer', () => {
       };
 
       Object.entries(listeners).forEach(([event, handler]) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         enforcer.on(event as any, handler);
       });
 

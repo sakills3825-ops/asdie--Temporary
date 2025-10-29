@@ -25,6 +25,11 @@ import {
   BookmarkFolderRequestSchema,
   BookmarkSearchRequestSchema,
 } from '../../shared/ipc/validators';
+import {
+  validateUrlWithError,
+  validateTitleWithError,
+  validateFolderName,
+} from './InputValidator';
 
 /**
  * 북마크 생성 요청 타입
@@ -32,18 +37,18 @@ import {
 export interface CreateBookmarkRequest {
   url: string;
   title: string;
-  folder?: string;
-  tags?: string[];
+  folder?: string | undefined;
+  tags?: string[] | undefined;
 }
 
 /**
  * 북마크 업데이트 요청 타입
  */
 export interface UpdateBookmarkRequest {
-  url?: string;
-  title?: string;
-  folder?: string;
-  tags?: string[];
+  url?: string | undefined;
+  title?: string | undefined;
+  folder?: string | undefined;
+  tags?: string[] | undefined;
 }
 
 /**
@@ -117,11 +122,61 @@ export class BookmarkHandler {
   }
 
   /**
+   * 에러 응답 생성 헬퍼
+   * BaseError 타입 감지 및 로깅
+   */
+  private formatErrorResponse(error: unknown, operation: string): { success: false; error: string } {
+    // BaseError 구조 감지
+    if (error instanceof Error && 'code' in error && 'statusCode' in error) {
+      const baseErr = error as any;
+      this.logger.error(`BookmarkHandler: ${operation} failed`, baseErr);
+      return { success: false, error: baseErr.message };
+    }
+
+    // 일반 Error
+    const err = error instanceof Error ? error : new Error(String(error));
+    this.logger.error(`BookmarkHandler: ${operation} failed`, err);
+    return { success: false, error: err.message };
+  }
+
+  /**
+   * 북마크 입력 검증
+   */
+  private validateCreateBookmarkRequest(
+    bookmark: CreateBookmarkRequest
+  ): { valid: boolean; error?: string } {
+    // 입력값 검증 1: URL 형식 확인
+    const urlValidation = validateUrlWithError(bookmark.url);
+    if (!urlValidation.valid) {
+      return urlValidation;
+    }
+
+    // 입력값 검증 2: 제목 검증
+    const titleValidation = validateTitleWithError(bookmark.title, 500);
+    if (!titleValidation.valid) {
+      return titleValidation;
+    }
+
+    // 입력값 검증 3: 폴더명 검증 (선택사항)
+    if (bookmark.folder && !validateFolderName(bookmark.folder)) {
+      return { valid: false, error: '폴더명이 유효하지 않습니다' };
+    }
+
+    return { valid: true };
+  }
+
+  /**
    * 북마크 생성 핸들러
    */
-  private async handleCreateBookmark(bookmark: any) {
+  private async handleCreateBookmark(bookmark: CreateBookmarkRequest) {
     try {
       // 입력값 검증
+      const validation = this.validateCreateBookmarkRequest(bookmark);
+      if (!validation.valid) {
+        return { success: false, error: validation.error };
+      }
+
+      // Zod 검증
       const validated = BookmarkCreateRequestSchema.parse(bookmark);
 
       this.logger.info('BookmarkHandler: Creating bookmark', {
@@ -129,12 +184,14 @@ export class BookmarkHandler {
         metadata: { title: validated.title },
       });
 
-      const result = await this.bookmarkService.createBookmark(validated as any);
+      const result = await this.bookmarkService.createBookmark({
+        ...validated,
+        folder: validated.folder || undefined,
+        tags: validated.tags || undefined,
+      });
       return { success: true, data: result };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('BookmarkHandler: Failed to create bookmark', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Creating bookmark');
     }
   }
 
@@ -154,9 +211,7 @@ export class BookmarkHandler {
       await this.bookmarkService.deleteBookmark(validated.id);
       return { success: true };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('BookmarkHandler: Failed to delete bookmark', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Deleting bookmark');
     }
   }
 
@@ -170,9 +225,7 @@ export class BookmarkHandler {
       const bookmarks = await this.bookmarkService.getAllBookmarks();
       return { success: true, data: bookmarks };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('BookmarkHandler: Failed to get all bookmarks', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Getting all bookmarks');
     }
   }
 
@@ -208,9 +261,7 @@ export class BookmarkHandler {
       const result = await this.bookmarkService.addFolder(validated.folderName);
       return { success: true, data: result };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('BookmarkHandler: Failed to add folder', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Adding folder');
     }
   }
 
@@ -231,9 +282,7 @@ export class BookmarkHandler {
       const result = await this.bookmarkService.updateFolder(validatedId.id, validatedName.folderName);
       return { success: true, data: result };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('BookmarkHandler: Failed to update folder', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Updating folder');
     }
   }
   /**
@@ -271,9 +320,7 @@ export class BookmarkHandler {
       const results = await this.bookmarkService.searchBookmarks(validated.query);
       return { success: true, data: results };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('BookmarkHandler: Failed to search bookmarks', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Searching bookmarks');
     }
   }
 

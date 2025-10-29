@@ -16,36 +16,26 @@
 
 import { ipcMain } from 'electron';
 import { LoggerImpl, type ILogger, LogLevel } from '../../shared/logger';
+import type { HistoryEntry, FrequentSite } from '../../shared/types/domain';
 import { IPC_CHANNELS } from '../../shared/ipc/channels';
 import {
   HistoryEntrySchema,
   HistorySearchRequestSchema,
   HistoryIdRequestSchema,
 } from '../../shared/ipc/validators';
-
-/**
- * 방문 기록 항목 타입
- */
-export interface HistoryEntry {
-  id?: string;
-  url: string;
-  title?: string;
-  visitedAt?: number;
-  duration?: number;
-  count?: number; // 자주 방문한 사이트용
-}
+import { validateSearchQueryWithError } from './InputValidator';
 
 /**
  * HistoryService 인터페이스 (Phase 4에서 구현)
  */
 export interface IHistoryService {
-  addEntry(entry: HistoryEntry): Promise<HistoryEntry>;
+  addEntry(entry: Omit<HistoryEntry, 'id'>): Promise<HistoryEntry>;
   searchHistory(query: string, limit?: number): Promise<HistoryEntry[]>;
   getAllHistory(limit?: number): Promise<HistoryEntry[]>;
   deleteEntry(id: string): Promise<void>;
   clearHistory(beforeTime?: number): Promise<void>;
   getByDateRange(start: number, end: number): Promise<HistoryEntry[]>;
-  getFrequentSites(limit?: number): Promise<HistoryEntry[]>;
+  getFrequentSites(limit?: number): Promise<FrequentSite[]>;
 }
 
 /**
@@ -99,6 +89,21 @@ export class HistoryHandler {
   }
 
   /**
+   * 에러 응답 생성 헬퍼
+   */
+  private formatErrorResponse(error: unknown, operation: string): { success: false; error: string } {
+    if (error instanceof Error && 'code' in error && 'statusCode' in error) {
+      const baseErr = error as any;
+      this.logger.error(`HistoryHandler: ${operation} failed`, baseErr);
+      return { success: false, error: baseErr.message };
+    }
+
+    const err = error instanceof Error ? error : new Error(String(error));
+    this.logger.error(`HistoryHandler: ${operation} failed`, err);
+    return { success: false, error: err.message };
+  }
+
+  /**
    * 기록 추가 핸들러
    */
   private async handleAddEntry(entry: HistoryEntry) {
@@ -114,10 +119,29 @@ export class HistoryHandler {
       const result = await this.historyService.addEntry(validated as HistoryEntry);
       return { success: true, data: result };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('HistoryHandler: Failed to add entry', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Adding entry');
     }
+  }
+
+  /**
+   * 기록 검색 검증
+   */
+  private validateSearchHistoryInput(
+    query: string,
+    limit?: number
+  ): { valid: boolean; error?: string | undefined } {
+    // 검색어 검증
+    const queryValidation = validateSearchQueryWithError(query);
+    if (!queryValidation.valid) {
+      return { valid: false, error: queryValidation.error };
+    }
+
+    // limit 범위 검증
+    if (limit !== undefined && (limit < 1 || limit > 1000)) {
+      return { valid: false, error: 'Limit은 1-1000 사이여야 합니다' };
+    }
+
+    return { valid: true };
   }
 
   /**
@@ -126,6 +150,12 @@ export class HistoryHandler {
   private async handleSearchHistory(query: string, limit: number = 50) {
     try {
       // 입력값 검증
+      const validation = this.validateSearchHistoryInput(query, limit);
+      if (!validation.valid) {
+        return { success: false, error: validation.error };
+      }
+
+      // Zod 검증
       const validated = HistorySearchRequestSchema.parse({ query, limit });
 
       this.logger.info('HistoryHandler: Searching history', {
@@ -136,9 +166,7 @@ export class HistoryHandler {
       const results = await this.historyService.searchHistory(validated.query, validated.limit);
       return { success: true, data: results };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('HistoryHandler: Failed to search history', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Searching history');
     }
   }
 
@@ -155,9 +183,7 @@ export class HistoryHandler {
       const entries = await this.historyService.getAllHistory(limit);
       return { success: true, data: entries };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('HistoryHandler: Failed to get all history', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Getting all history');
     }
   }
 
@@ -177,9 +203,7 @@ export class HistoryHandler {
       await this.historyService.deleteEntry(validated.id);
       return { success: true };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('HistoryHandler: Failed to delete entry', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Deleting entry');
     }
   }
 
@@ -196,9 +220,7 @@ export class HistoryHandler {
       await this.historyService.clearHistory(beforeTime);
       return { success: true };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('HistoryHandler: Failed to clear history', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Clearing history');
     }
   }
 

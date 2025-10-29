@@ -36,6 +36,7 @@ interface CacheStats {
 /**
  * 캐시 매니저 (제네릭)
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class CacheManager<T = any> {
   private logger: ILogger;
   private cache: Map<string, CacheItem<T>> = new Map();

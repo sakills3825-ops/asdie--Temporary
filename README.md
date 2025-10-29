@@ -1,10 +1,10 @@
-# Zen Browser 🌿
+# Aside Browser 🌿
 
 A minimal, distraction-free browser built with **Electron**, **React 19**, **TypeScript**, and **Tailwind CSS**.
 
 ## 🎯 Project Overview
 
-Zen Browser is a modern desktop browser designed to minimize distractions and provide a clean, focused browsing experience. Built with cutting-edge technologies for optimal performance and developer experience.
+Aside Browser is a modern desktop browser designed to minimize distractions and provide a clean, focused browsing experience. Built with cutting-edge technologies for optimal performance and developer experience.
 
 ## 🏗️ Architecture
 

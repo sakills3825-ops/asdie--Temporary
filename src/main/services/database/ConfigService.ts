@@ -126,16 +126,19 @@ const schema: any = {
  */
 export class ConfigService {
   private static instance: ConfigService;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private store: any;
 
   private constructor() {
     // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
     const ElectronStore = require('electron-store');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.store = new ElectronStore({
       name: 'config',
       schema,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       migrations: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         '1.0.0': (store: any) => {
           // 버전 1.0.0 마이그레이션 (필요시 추가)
           if (!store.has('cacheSize')) {

@@ -12,7 +12,7 @@
 
 import { LoggerImpl, type ILogger, LogLevel } from '../../shared/logger';
 import type { HistoryManager } from '../managers/HistoryManager';
-import type { HistoryEntry } from '../../shared/types/domain';
+import type { HistoryEntry, FrequentSite } from '../../shared/types/domain';
 
 /**
  * 방문 기록 서비스
@@ -194,14 +194,14 @@ export class HistoryService {
   /**
    * 자주 방문한 사이트 조회
    */
-  public async getFrequentSites(limit: number = 10): Promise<Array<{ url: string; count: number }>> {
+  public async getFrequentSites(limit: number = 10): Promise<FrequentSite[]> {
     try {
       this.logger.info('HistoryService: Getting frequent sites', {
         module: 'HistoryService',
         metadata: { limit },
       });
 
-      const sites = this.historyManager.getFrequentSites(limit);
+      const sites = await this.historyManager.getFrequentSites(limit);
       return sites;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));

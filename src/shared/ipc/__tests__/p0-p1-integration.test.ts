@@ -182,6 +182,7 @@ describe('IPC 모듈 P0/P1 이슈 해결', () => {
 
       expect(response.success).toBe(false);
       expect(response.code).toBe(ERROR_CODES.UNKNOWN);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((response as any).error).toContain('[operation]');
     });
 
@@ -189,6 +190,7 @@ describe('IPC 모듈 P0/P1 이슈 해결', () => {
       const response = handleUnknownError(500);
 
       expect(response.success).toBe(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((response as any).error).toContain('500');
     });
 
@@ -196,6 +198,7 @@ describe('IPC 모듈 P0/P1 이슈 해결', () => {
       const response = handleUnknownError({ code: 'E_COMPLEX', data: { x: 1 } });
 
       expect(response.success).toBe(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((response as any).error).toBeTruthy();
     });
   });
@@ -492,6 +495,7 @@ describe('IPC 모듈 P0/P1 이슈 해결', () => {
       const result = { tabId: 'tab-1', success: true };
 
       // 응답 검증 (data 타입은 generic이므로 any로 처리)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response: IpcResponse<any> = { success: true, data: result };
       expect(() => {
         validateResponseSize(response);

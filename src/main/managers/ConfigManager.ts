@@ -118,6 +118,7 @@ export class ConfigManager {
    * const theme = config.get<string>('theme', 'light');
    * const windowWidth = config.get<number>('window.width', 1200);
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public get<T = any>(key: string, defaultValue?: T): T {
     const value = this.getNestedValue(this.config, key);
     return value !== undefined ? value : (defaultValue as T);
@@ -133,6 +134,7 @@ export class ConfigManager {
    * config.set('theme', 'dark');
    * config.set('window.width', 1920);
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public set<T = any>(key: string, value: T): void {
     this.setNestedValue(this.config, key, value);
     this.isDirty = true;
@@ -156,6 +158,7 @@ export class ConfigManager {
    *   'window.width': 1920
    * });
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public setMultiple(updates: Record<string, any>): void {
     for (const [key, value] of Object.entries(updates)) {
       this.set(key, value);
@@ -333,6 +336,7 @@ export class ConfigManager {
       await fs.mkdir(dirPath, { recursive: true });
     } catch (error) {
       // 이미 존재하면 무시
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if ((error as any)?.code !== 'EEXIST') {
         throw error;
       }
@@ -362,6 +366,7 @@ export class ConfigManager {
    * @example
    * getNestedValue({ a: { b: { c: 1 } } }, 'a.b.c') // returns 1
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private getNestedValue(obj: any, path: string): any {
     const keys = path.split('.');
     let current = obj;
@@ -381,6 +386,7 @@ export class ConfigManager {
    *
    * @private
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private setNestedValue(obj: any, path: string, value: any): void {
     const keys = path.split('.');
     let current = obj;
@@ -406,6 +412,7 @@ export class ConfigManager {
    *
    * @private
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private deleteNestedValue(obj: any, path: string): void {
     const keys = path.split('.');
     let current = obj;

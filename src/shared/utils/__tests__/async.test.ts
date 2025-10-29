@@ -24,6 +24,7 @@ import {
 } from '../async';
 import { TimeoutError } from '../../errors';
 import { LIMITS } from '../../constants';
+import { vi } from 'vitest';
 
 describe('async.ts - 비동기 유틸리티 테스트', () => {
   // ============================================
@@ -132,14 +133,14 @@ describe('async.ts - 비동기 유틸리티 테스트', () => {
   // ============================================
   describe('withRetry()', () => {
     it('정상: 첫 시도에서 성공', async () => {
-      const fn = jest.fn().mockResolvedValueOnce(42);
+      const fn = vi.fn().mockResolvedValueOnce(42);
       const result = await withRetry(fn);
       expect(result).toBe(42);
       expect(fn).toHaveBeenCalledTimes(1);
     });
 
     it('한 번 실패 후 성공: 재시도 2회 성공', async () => {
-      const fn = jest
+      const fn = vi
         .fn()
         .mockRejectedValueOnce(new Error('First attempt'))
         .mockResolvedValueOnce(42);
@@ -149,7 +150,7 @@ describe('async.ts - 비동기 유틸리티 테스트', () => {
     });
 
     it('모두 실패: maxAttempts 초과 후 throw', async () => {
-      const fn = jest.fn().mockRejectedValue(new Error('Always fails'));
+      const fn = vi.fn().mockRejectedValue(new Error('Always fails'));
       await expect(withRetry(fn, 3, 50)).rejects.toThrow('Always fails');
       expect(fn).toHaveBeenCalledTimes(3);
     });
@@ -171,33 +172,33 @@ describe('async.ts - 비동기 유틸리티 테스트', () => {
     });
 
     it('기본값: maxAttempts=3, initialDelayMs=100', async () => {
-      const fn = jest.fn().mockResolvedValueOnce(42);
+      const fn = vi.fn().mockResolvedValueOnce(42);
       const result = await withRetry(fn);
       expect(result).toBe(42);
     });
 
     it('커스텀 값: maxAttempts=5, initialDelayMs=50', async () => {
-      const fn = jest.fn().mockResolvedValueOnce(42);
+      const fn = vi.fn().mockResolvedValueOnce(42);
       const result = await withRetry(fn, 5, 50);
       expect(result).toBe(42);
     });
 
     it('maxAttempts=1: 재시도 없음', async () => {
-      const fn = jest.fn().mockRejectedValueOnce(new Error('Failed'));
+      const fn = vi.fn().mockRejectedValueOnce(new Error('Failed'));
       await expect(withRetry(fn, 1, 100)).rejects.toThrow('Failed');
       expect(fn).toHaveBeenCalledTimes(1);
     });
 
     it('Error vs string 처리: 둘 다 에러로 변환', async () => {
-      const fnError = jest.fn().mockRejectedValueOnce(new Error('Error object'));
-      const fnString = jest.fn().mockRejectedValueOnce('Error string');
+      const fnError = vi.fn().mockRejectedValueOnce(new Error('Error object'));
+      const fnString = vi.fn().mockRejectedValueOnce('Error string');
 
       await expect(withRetry(fnError, 1, 50)).rejects.toThrow('Error object');
       await expect(withRetry(fnString, 1, 50)).rejects.toThrow('Error string');
     });
 
     it('누적 지연: 총 지연시간 = 100ms + 200ms + 400ms', async () => {
-      const fn = jest
+      const fn = vi
         .fn()
         .mockRejectedValueOnce(new Error('1'))
         .mockRejectedValueOnce(new Error('2'))
@@ -214,7 +215,7 @@ describe('async.ts - 비동기 유틸리티 테스트', () => {
     });
 
     it('재시도 카운트: 정확한 시도 횟수 기록', async () => {
-      const fn = jest
+      const fn = vi
         .fn()
         .mockRejectedValueOnce(new Error('1'))
         .mockRejectedValueOnce(new Error('2'))
@@ -466,7 +467,7 @@ describe('async.ts - 비동기 유틸리티 테스트', () => {
     });
 
     it('onCancel 콜백: cancel 시 호출', async () => {
-      const onCancelFn = jest.fn();
+      const onCancelFn = vi.fn();
       const promise = Promise.resolve(42);
       const cancellable = new CancelablePromise(promise, onCancelFn);
 
@@ -488,7 +489,7 @@ describe('async.ts - 비동기 유틸리티 테스트', () => {
     });
 
     it('중복 cancel: 안전한 처리', async () => {
-      const onCancelFn = jest.fn();
+      const onCancelFn = vi.fn();
       const promise = Promise.resolve(42);
       const cancellable = new CancelablePromise(promise, onCancelFn);
 

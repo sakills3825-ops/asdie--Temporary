@@ -24,25 +24,42 @@ export interface BrowserTab {
 
 /**
  * 히스토리 항목
+ * 
+ * Prisma History 모델과 일치
+ * id와 title은 선택사항 (저장 시 서버에서 생성 가능)
  */
 export interface HistoryEntry {
-  id: string;
+  id?: string;
   url: string;
-  title: string;
-  visitedAt: number;
+  title?: string;
+  favicon?: string | null;
+  visitedAt: Date;
   duration: number; // 방문 지속 시간 (ms)
+  visits?: number;
 }
 
 /**
  * 북마크
+ * 
+ * Prisma Bookmark 모델과 일치
  */
 export interface Bookmark {
   id: string;
   url: string;
   title: string;
   folder?: string;
-  tags?: string[];
-  createdAt: number;
+  description?: string | null;
+  favicon?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * 자주 방문한 사이트
+ */
+export interface FrequentSite {
+  url: string;
+  count: number;
 }
 
 /**

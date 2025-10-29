@@ -12,6 +12,7 @@
  */
 
 import { LoggerImpl, type ILogger, LogLevel } from '../../shared/logger';
+import type { BrowserTab } from '../../shared/types/domain';
 import type { TabManager } from '../managers/TabManager';
 import type { ResourceManager } from '../managers/ResourceManager';
 
@@ -32,7 +33,7 @@ export class TabService {
   /**
    * 새 탭 생성
    */
-  public async createTab(url: string, title: string = ''): Promise<any> {
+  public async createTab(url: string, title: string = ''): Promise<BrowserTab> {
     try {
       // 메모리 체크
       if (!this.resourceManager.canAllocate(40)) {
@@ -120,7 +121,7 @@ export class TabService {
   /**
    * 탭 정보 업데이트
    */
-  public async updateTab(tabId: string, updates: Record<string, any>): Promise<any> {
+  public async updateTab(tabId: string, updates: Partial<Omit<BrowserTab, 'id' | 'createdAt'>>): Promise<BrowserTab> {
     try {
       this.logger.info('TabService: Updating tab', {
         module: 'TabService',
@@ -155,7 +156,7 @@ export class TabService {
   /**
    * 모든 탭 조회
    */
-  public async getAllTabs(): Promise<any[]> {
+  public async getAllTabs(): Promise<BrowserTab[]> {
     try {
       this.logger.info('TabService: Getting all tabs');
 
@@ -171,7 +172,7 @@ export class TabService {
   /**
    * 탭 복제
    */
-  public async duplicateTab(tabId: string): Promise<any> {
+  public async duplicateTab(tabId: string): Promise<BrowserTab> {
     try {
       this.logger.info('TabService: Duplicating tab', {
         module: 'TabService',
@@ -210,7 +211,7 @@ export class TabService {
   /**
    * 활성 탭 조회
    */
-  public async getActiveTab(): Promise<any | null> {
+  public async getActiveTab(): Promise<BrowserTab | null> {
     try {
       const activeTab = await this.tabManager.getActiveTab();
       return activeTab ?? null;

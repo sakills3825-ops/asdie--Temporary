@@ -11,6 +11,7 @@
  */
 
 import { LoggerImpl, type ILogger, LogLevel } from '../../shared/logger';
+import type { Bookmark } from '../../shared/types/domain';
 import { BookmarkRepository } from './database/BookmarkRepository';
 
 /**
@@ -35,7 +36,7 @@ export class BookmarkService {
   /**
    * 북마크 추가
    */
-  public async createBookmark(bookmark: Record<string, any>): Promise<any> {
+  public async createBookmark(bookmark: { url: string; title: string; folder?: string | undefined; tags?: string[] | undefined }): Promise<Bookmark> {
     try {
       this.logger.info('BookmarkService: Creating bookmark', {
         module: 'BookmarkService',
@@ -43,11 +44,11 @@ export class BookmarkService {
       });
 
       const newBookmark = await this.bookmarkRepository.create({
-        url: bookmark.url,
+        url: bookmark.url || '',
         title: bookmark.title || 'Untitled',
-        description: bookmark.description || '',
+        description: '',
         folder: bookmark.folder || 'default',
-        favicon: bookmark.favicon || null
+        favicon: null
       });
 
       this.logger.info('BookmarkService: Bookmark created successfully', {
@@ -89,7 +90,7 @@ export class BookmarkService {
   /**
    * 모든 북마크 조회
    */
-  public async getAllBookmarks(): Promise<any[]> {
+  public async getAllBookmarks(): Promise<Bookmark[]> {
     try {
       this.logger.info('BookmarkService: Getting all bookmarks');
 
@@ -181,7 +182,7 @@ export class BookmarkService {
   /**
    * 북마크 검색
    */
-  public async searchBookmarks(query: string): Promise<any[]> {
+  public async searchBookmarks(query: string): Promise<Bookmark[]> {
     try {
       if (!query || query.trim().length === 0) {
         throw new Error('검색어를 입력해주세요');
@@ -210,7 +211,10 @@ export class BookmarkService {
   /**
    * 북마크 업데이트
    */
-  public async updateBookmark(id: string, updates: Record<string, any>): Promise<any> {
+  public async updateBookmark(
+    id: string, 
+    updates: Partial<Omit<Bookmark, 'id' | 'createdAt'>> & { folder?: string | undefined; tags?: string[] | undefined }
+  ): Promise<Bookmark> {
     try {
       this.logger.info('BookmarkService: Updating bookmark', {
         module: 'BookmarkService',
@@ -235,7 +239,7 @@ export class BookmarkService {
   /**
    * 특정 북마크 조회
    */
-  public async getBookmark(id: string): Promise<any | null> {
+  public async getBookmark(id: string): Promise<Bookmark | null> {
     try {
       const bookmark = await this.bookmarkRepository.findById(id);
       return bookmark ?? null;
@@ -262,7 +266,7 @@ export class BookmarkService {
   /**
    * 폴더 이름 변경
    */
-  public async updateFolder(folderId: string, newName: string): Promise<any> {
+  public async updateFolder(folderId: string, newName: string): Promise<{ id: string; name: string }> {
     try {
       this.logger.info('BookmarkService: Updating folder', {
         module: 'BookmarkService',

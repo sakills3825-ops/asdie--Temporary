@@ -16,6 +16,7 @@
 import EventEmitter from 'events';
 import { LoggerImpl, type ILogger, LogLevel } from '../../shared/logger';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type EventCallback<T = any> = (data: T) => void;
 
 /**
@@ -47,7 +48,9 @@ export class EventBus {
     return EventBus.instance;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public on<T = any>(eventName: string, callback: EventCallback<T>): () => void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.emitter.on(eventName, callback as any);
 
     // 리스너 추적
@@ -76,7 +79,9 @@ export class EventBus {
    *   console.log('App is ready');
    * });
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public once<T = any>(eventName: string, callback: EventCallback<T>): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.emitter.once(eventName, callback as any);
 
     this.logger.debug('EventBus: One-time listener added', {
@@ -95,8 +100,10 @@ export class EventBus {
    * eventBus.off('tab:created', callback);
    * eventBus.off('tab:created'); // 모든 리스너 제거
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public off<T = any>(eventName: string, callback?: EventCallback<T>): void {
     if (callback) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.emitter.off(eventName, callback as any);
       this.listeners.get(eventName)?.delete(callback);
     } else {
@@ -119,6 +126,7 @@ export class EventBus {
    * @example
    * eventBus.emit('tab:created', { id: 'tab-123', url: 'https://example.com' });
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public emit<T = any>(eventName: string, data?: T): boolean {
     this.logger.debug('EventBus: Event emitted', {
       module: 'EventBus',

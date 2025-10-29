@@ -14,6 +14,7 @@
  */
 
 import { LoggerImpl, type ILogger, LogLevel } from '../../shared/logger';
+import type { HistoryEntry, FrequentSite } from '../../shared/types/domain';
 import { HistoryRepository } from '../services/database/HistoryRepository';
 
 /**
@@ -36,15 +37,26 @@ export class HistoryManager {
   }
 
   /**
+   * 방문 날짜를 Date 객체로 변환
+   */
+  private normalizeVisitedDate(visitedAt: Date | number | undefined): Date {
+    if (visitedAt instanceof Date) {
+      return visitedAt;
+    }
+    if (typeof visitedAt === 'number') {
+      return new Date(visitedAt);
+    }
+    return new Date();
+  }
+
+  /**
    * 히스토리 항목 추가
    *
    * @param entry 추가할 히스토리 항목
    */
-  public async addEntry(entry: any): Promise<void> {
+  public async addEntry(entry: HistoryEntry): Promise<void> {
     try {
-      const visitedDate = entry.visitedAt instanceof Date 
-        ? entry.visitedAt 
-        : new Date(entry.visitedAt || Date.now());
+      const visitedDate = this.normalizeVisitedDate(entry.visitedAt as Date | number | undefined);
 
       await this.historyRepository.create({
         url: entry.url,
@@ -72,7 +84,7 @@ export class HistoryManager {
    * @param limit 반환할 최대 항목 수
    * @returns 히스토리 항목 배열
    */
-  public async getAllEntries(limit: number = 100): Promise<any[]> {
+  public async getAllEntries(limit: number = 100): Promise<HistoryEntry[]> {
     try {
       return await this.historyRepository.findAll(limit);
     } catch (error) {
@@ -88,7 +100,7 @@ export class HistoryManager {
    * @param id 항목 ID
    * @returns 히스토리 항목 또는 null
    */
-  public async getEntry(id: string): Promise<any | null> {
+  public async getEntry(id: string): Promise<HistoryEntry | null> {
     try {
       return await this.historyRepository.findById(id);
     } catch (error) {
@@ -105,7 +117,7 @@ export class HistoryManager {
    * @param limit 반환할 최대 항목 수
    * @returns 검색 결과
    */
-  public async search(query: string, limit: number = 50): Promise<any[]> {
+  public async search(query: string, limit: number = 50): Promise<HistoryEntry[]> {
     try {
       return await this.historyRepository.search(query, limit);
     } catch (error) {
@@ -143,7 +155,7 @@ export class HistoryManager {
    * @param endTime 종료 시간 (ms)
    * @returns 해당 범위의 히스토리
    */
-  public async getEntriesByDateRange(startTime: number, endTime: number): Promise<any[]> {
+  public async getEntriesByDateRange(startTime: number, endTime: number): Promise<HistoryEntry[]> {
     try {
       const startDate = new Date(startTime);
       const endDate = new Date(endTime);
@@ -161,7 +173,7 @@ export class HistoryManager {
    * @param limit 반환할 사이트 개수
    * @returns 방문 빈도순 사이트
    */
-  public async getFrequentSites(limit: number = 10): Promise<any[]> {
+  public async getFrequentSites(limit: number = 10): Promise<FrequentSite[]> {
     try {
       return await this.historyRepository.getFrequentSites(limit);
     } catch (error) {

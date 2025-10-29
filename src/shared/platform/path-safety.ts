@@ -323,6 +323,7 @@ export function safeEnsureDirectory(
   try {
     // 1. 생성 시도 (atomic: mkdir은 원자적)
     fs.mkdirSync(dirPath, { recursive: true, mode: 0o700 });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     // 2. EEXIST 아니면 에러
     if (error.code !== 'EEXIST') {

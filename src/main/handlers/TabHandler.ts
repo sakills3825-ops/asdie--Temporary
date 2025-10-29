@@ -23,6 +23,11 @@ import {
   TabUpdateRequestSchema,
   TabIdRequestSchema,
 } from '../../shared/ipc/validators';
+import type { BaseError } from '../../shared/errors';
+import {
+  validateUrlWithError,
+  validateTitleWithError,
+} from './InputValidator';
 
 /**
  * TabService 인터페이스 (Phase 4에서 구현)
@@ -95,11 +100,62 @@ export class TabHandler {
   }
 
   /**
+   * 에러 응답 생성 헬퍼
+   * BaseError 타입 감지 및 로깅
+   */
+  private formatErrorResponse(error: unknown, operation: string): { success: false; error: string } {
+    // BaseError 구조 감지 (instanceof 대신 구조 기반)
+    if (error instanceof Error && 'code' in error && 'statusCode' in error) {
+      const baseErr = error as BaseError;
+      this.logger.error(`TabHandler: ${operation} failed`, baseErr);
+      return { success: false, error: baseErr.message };
+    }
+
+    // 일반 Error
+    const err = error instanceof Error ? error : new Error(String(error));
+    this.logger.error(`TabHandler: ${operation} failed`, err);
+    return { success: false, error: err.message };
+  }
+
+  /**
+   * 탭 입력 검증
+   */
+  private validateCreateTabInput(
+    url: string,
+    title?: string
+  ): { valid: boolean; error?: string } {
+    // 입력값 검증 1: 타입 확인
+    if (typeof url !== 'string') {
+      return { valid: false, error: 'URL은 문자열이어야 합니다' };
+    }
+
+    // 입력값 검증 2: URL 형식 확인
+    const urlValidation = validateUrlWithError(url);
+    if (!urlValidation.valid) {
+      return urlValidation;
+    }
+
+    // 입력값 검증 3: 제목 길이 확인
+    const titleValidation = validateTitleWithError(title || undefined, 500);
+    if (!titleValidation.valid) {
+      return titleValidation;
+    }
+
+    return { valid: true };
+  }
+
+  /**
    * 새 탭 생성 핸들러
    */
   private async handleCreateTab(url: string, title: string = '') {
     try {
       // 입력값 검증
+      const validation = this.validateCreateTabInput(url, title);
+      if (!validation.valid) {
+        return { success: false, error: validation.error };
+      }
+
+      // Zod 검증
       const validated = TabCreateRequestSchema.parse({
         url,
         title: title || undefined,
@@ -113,9 +169,7 @@ export class TabHandler {
       const tab = await this.tabService.createTab(validated.url, validated.title);
       return { success: true, data: tab };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('TabHandler: Failed to create tab', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Creating tab');
     }
   }
 
@@ -135,9 +189,7 @@ export class TabHandler {
       await this.tabService.closeTab(validated.tabId);
       return { success: true };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('TabHandler: Failed to close tab', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Closing tab');
     }
   }
 
@@ -157,9 +209,7 @@ export class TabHandler {
       await this.tabService.selectTab(validated.tabId);
       return { success: true };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('TabHandler: Failed to select tab', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Selecting tab');
     }
   }
 
@@ -179,9 +229,7 @@ export class TabHandler {
       const tab = await this.tabService.updateTab(validated.tabId, validated.updates);
       return { success: true, data: tab };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('TabHandler: Failed to update tab', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Updating tab');
     }
   }
 
@@ -195,9 +243,7 @@ export class TabHandler {
       const tabs = await this.tabService.getAllTabs();
       return { success: true, data: tabs };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('TabHandler: Failed to get all tabs', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Getting all tabs');
     }
   }
 
@@ -217,9 +263,7 @@ export class TabHandler {
       const tab = await this.tabService.duplicateTab(validated.tabId);
       return { success: true, data: tab };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('TabHandler: Failed to duplicate tab', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Duplicating tab');
     }
   }
 
@@ -239,9 +283,7 @@ export class TabHandler {
       await this.tabService.muteTab(validated.tabId);
       return { success: true };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('TabHandler: Failed to mute tab', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Muting tab');
     }
   }
 
@@ -261,9 +303,7 @@ export class TabHandler {
       await this.tabService.pinTab(validated.tabId);
       return { success: true };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('TabHandler: Failed to pin tab', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Pinning tab');
     }
   }
 

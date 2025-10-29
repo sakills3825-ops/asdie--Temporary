@@ -167,6 +167,7 @@ describe('Branded Types', () => {
     });
 
     it('문자열은 에러를 던져야 함', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect(() => createWindowId('123' as any)).toThrow('Invalid window ID');
     });
   });

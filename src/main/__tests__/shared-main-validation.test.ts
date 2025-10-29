@@ -36,6 +36,7 @@ describe('🔒 Main Process 검증 (Refactored)', () => {
   describe('✅ Manager 팩토리 패턴', () => {
     it('TabManager 팩토리로 생성', async () => {
       const repo = createMockTabRepository();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const manager = TabManager.create(repo as any);
 
       expect(manager).toBeDefined();
@@ -43,6 +44,7 @@ describe('🔒 Main Process 검증 (Refactored)', () => {
 
     it('HistoryManager 팩토리로 생성', async () => {
       const repo = createMockHistoryRepository();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const manager = HistoryManager.create(repo as any);
 
       expect(manager).toBeDefined();
@@ -50,6 +52,7 @@ describe('🔒 Main Process 검증 (Refactored)', () => {
 
     it('TabManager 탭 추가 성능', async () => {
       const repo = createMockTabRepository();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const manager = TabManager.create(repo as any);
 
       const start = performance.now();
@@ -65,13 +68,16 @@ describe('🔒 Main Process 검증 (Refactored)', () => {
 
     it('HistoryManager 항목 추가', async () => {
       const repo = createMockHistoryRepository();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const manager = HistoryManager.create(repo as any);
 
       for (let i = 0; i < 10; i++) {
         await manager.addEntry({
+          id: `entry-${i}`,
           url: `https://site${i}.com`,
           visitedAt: new Date(),
           title: `Site ${i}`,
+          duration: 1000,
         });
       }
 
@@ -91,12 +97,20 @@ describe('🔒 Main Process 검증 (Refactored)', () => {
       const tabRepo = createMockTabRepository();
       const histRepo = createMockHistoryRepository();
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const tabMgr = TabManager.create(tabRepo as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const histMgr = HistoryManager.create(histRepo as any);
 
       await Promise.all([
         tabMgr.addTab('https://example.com', 'Example'),
-        histMgr.addEntry({ url: 'https://test.com', visitedAt: new Date() }),
+        histMgr.addEntry({ 
+          id: 'entry-1',
+          url: 'https://test.com', 
+          visitedAt: new Date(),
+          title: 'Test',
+          duration: 1000,
+        }),
       ]);
 
       expect(tabRepo.create).toHaveBeenCalled();

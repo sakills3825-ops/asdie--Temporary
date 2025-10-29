@@ -8,11 +8,7 @@
  */
 
 import { PrismaClient, HistoryEntry } from '@prisma/client';
-
-interface FrequentSite {
-  url: string;
-  count: number;
-}
+import type { FrequentSite } from '../../../shared/types/domain';
 
 /**
  * HistoryRepository 클래스

@@ -62,6 +62,21 @@ export class WindowHandler {
   }
 
   /**
+   * 에러 응답 생성 헬퍼
+   */
+  private formatErrorResponse(error: unknown, operation: string): { success: false; error: string } {
+    if (error instanceof Error && 'code' in error && 'statusCode' in error) {
+      const baseErr = error as any;
+      this.logger.error(`WindowHandler: ${operation} failed`, baseErr);
+      return { success: false, error: baseErr.message };
+    }
+
+    const err = error instanceof Error ? error : new Error(String(error));
+    this.logger.error(`WindowHandler: ${operation} failed`, err);
+    return { success: false, error: err.message };
+  }
+
+  /**
    * 윈도우 최소화 핸들러
    */
   private async handleMinimize() {
@@ -71,9 +86,7 @@ export class WindowHandler {
       await this.windowService.minimize();
       return { success: true };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('WindowHandler: Failed to minimize window', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Minimizing window');
     }
   }
 
@@ -87,9 +100,7 @@ export class WindowHandler {
       await this.windowService.maximize();
       return { success: true };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('WindowHandler: Failed to maximize window', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Maximizing window');
     }
   }
 
@@ -103,14 +114,12 @@ export class WindowHandler {
       await this.windowService.restore();
       return { success: true };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('WindowHandler: Failed to restore window', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Restoring window');
     }
   }
 
   /**
-   * 윈도우 닫기 핸들러
+   * 윈도우 종료 핸들러
    */
   private async handleClose() {
     try {
@@ -119,9 +128,7 @@ export class WindowHandler {
       await this.windowService.close();
       return { success: true };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('WindowHandler: Failed to close window', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Closing window');
     }
   }
 
@@ -135,9 +142,7 @@ export class WindowHandler {
       await this.windowService.toggleFullscreen();
       return { success: true };
     } catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error('WindowHandler: Failed to toggle fullscreen', err);
-      return { success: false, error: err.message };
+      return this.formatErrorResponse(error, 'Toggling fullscreen');
     }
   }
 

@@ -16,7 +16,7 @@
  */
 
 import { ipcMain } from 'electron';
-import { LoggerImpl, type ILogger, LogLevel } from '../../shared/logger';
+import { BaseHandler } from './BaseHandler';
 import { IPC_CHANNELS } from '../../shared/ipc/channels';
 import type { Bookmark } from '../../shared/types';
 import {
@@ -77,11 +77,9 @@ export interface IBookmarkService {
 /**
  * 북마크 IPC 핸들러
  */
-export class BookmarkHandler {
-  private logger: ILogger;
-
+export class BookmarkHandler extends BaseHandler {
   constructor(private bookmarkService: IBookmarkService) {
-    this.logger = new LoggerImpl('BookmarkHandler', LogLevel.INFO);
+    super('BookmarkHandler');
   }
 
   /**
@@ -121,23 +119,7 @@ export class BookmarkHandler {
     this.logger.info('BookmarkHandler: Handlers registered successfully');
   }
 
-  /**
-   * 에러 응답 생성 헬퍼
-   * BaseError 타입 감지 및 로깅
-   */
-  private formatErrorResponse(error: unknown, operation: string): { success: false; error: string } {
-    // BaseError 구조 감지
-    if (error instanceof Error && 'code' in error && 'statusCode' in error) {
-      const baseErr = error as any;
-      this.logger.error(`BookmarkHandler: ${operation} failed`, baseErr);
-      return { success: false, error: baseErr.message };
-    }
-
-    // 일반 Error
-    const err = error instanceof Error ? error : new Error(String(error));
-    this.logger.error(`BookmarkHandler: ${operation} failed`, err);
-    return { success: false, error: err.message };
-  }
+  // formatErrorResponse is provided by BaseHandler
 
   /**
    * 북마크 입력 검증

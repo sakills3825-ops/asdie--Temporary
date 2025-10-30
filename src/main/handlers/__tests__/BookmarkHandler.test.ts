@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 describe('BookmarkHandler - Integration Tests', () => {
   describe('북마크 CRUD', () => {

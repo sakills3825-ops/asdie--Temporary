@@ -16,14 +16,13 @@
  */
 
 import { ipcMain } from 'electron';
-import { LoggerImpl, type ILogger, LogLevel } from '../../shared/logger';
+import { BaseHandler } from './BaseHandler';
 import { IPC_CHANNELS } from '../../shared/ipc/channels';
 import {
   TabCreateRequestSchema,
   TabUpdateRequestSchema,
   TabIdRequestSchema,
 } from '../../shared/ipc/validators';
-import type { BaseError } from '../../shared/errors';
 import {
   validateUrlWithError,
   validateTitleWithError,
@@ -53,18 +52,16 @@ export interface ITabService {
 /**
  * 탭 IPC 핸들러
  */
-export class TabHandler {
-  private logger: ILogger;
-
+export class TabHandler extends BaseHandler {
   constructor(private tabService: ITabService) {
-    this.logger = new LoggerImpl('TabHandler', LogLevel.INFO);
+    super('TabHandler');
   }
 
   /**
    * 모든 탭 IPC 핸들 등록
    */
   public registerHandlers(): void {
-    this.logger.info('TabHandler: Registering handlers');
+    this.logOperation('Registering handlers');
 
     // 새 탭 생성
     ipcMain.handle(IPC_CHANNELS.tabCreateNew, (_event, url: string, title?: string) =>
@@ -96,25 +93,7 @@ export class TabHandler {
     // 탭 고정
     ipcMain.handle(IPC_CHANNELS.tabPin, (_event, tabId: string) => this.handlePinTab(tabId));
 
-    this.logger.info('TabHandler: Handlers registered successfully');
-  }
-
-  /**
-   * 에러 응답 생성 헬퍼
-   * BaseError 타입 감지 및 로깅
-   */
-  private formatErrorResponse(error: unknown, operation: string): { success: false; error: string } {
-    // BaseError 구조 감지 (instanceof 대신 구조 기반)
-    if (error instanceof Error && 'code' in error && 'statusCode' in error) {
-      const baseErr = error as BaseError;
-      this.logger.error(`TabHandler: ${operation} failed`, baseErr);
-      return { success: false, error: baseErr.message };
-    }
-
-    // 일반 Error
-    const err = error instanceof Error ? error : new Error(String(error));
-    this.logger.error(`TabHandler: ${operation} failed`, err);
-    return { success: false, error: err.message };
+    this.logOperation('Handlers registered successfully');
   }
 
   /**
@@ -161,9 +140,8 @@ export class TabHandler {
         title: title || undefined,
       });
 
-      this.logger.info('TabHandler: Creating tab', {
-        module: 'TabHandler',
-        metadata: { url: validated.url },
+      this.logOperation('Creating tab', {
+        url: validated.url,
       });
 
       const tab = await this.tabService.createTab(validated.url, validated.title);

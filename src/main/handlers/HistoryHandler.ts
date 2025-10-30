@@ -15,7 +15,7 @@
  */
 
 import { ipcMain } from 'electron';
-import { LoggerImpl, type ILogger, LogLevel } from '../../shared/logger';
+import { BaseHandler } from './BaseHandler';
 import type { HistoryEntry, FrequentSite } from '../../shared/types/domain';
 import { IPC_CHANNELS } from '../../shared/ipc/channels';
 import {
@@ -41,11 +41,9 @@ export interface IHistoryService {
 /**
  * 방문 기록 IPC 핸들러
  */
-export class HistoryHandler {
-  private logger: ILogger;
-
+export class HistoryHandler extends BaseHandler {
   constructor(private historyService: IHistoryService) {
-    this.logger = new LoggerImpl('HistoryHandler', LogLevel.INFO);
+    super('HistoryHandler');
   }
 
   /**
@@ -88,20 +86,7 @@ export class HistoryHandler {
     this.logger.info('HistoryHandler: Handlers registered successfully');
   }
 
-  /**
-   * 에러 응답 생성 헬퍼
-   */
-  private formatErrorResponse(error: unknown, operation: string): { success: false; error: string } {
-    if (error instanceof Error && 'code' in error && 'statusCode' in error) {
-      const baseErr = error as any;
-      this.logger.error(`HistoryHandler: ${operation} failed`, baseErr);
-      return { success: false, error: baseErr.message };
-    }
-
-    const err = error instanceof Error ? error : new Error(String(error));
-    this.logger.error(`HistoryHandler: ${operation} failed`, err);
-    return { success: false, error: err.message };
-  }
+  // formatErrorResponse is provided by BaseHandler
 
   /**
    * 기록 추가 핸들러

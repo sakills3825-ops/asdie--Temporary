@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 describe('HistoryHandler - Integration Tests', () => {
   describe('검색 쿼리 검증', () => {

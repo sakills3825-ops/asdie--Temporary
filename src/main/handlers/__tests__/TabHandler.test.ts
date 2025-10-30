@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 describe('TabHandler - Integration Tests', () => {
   describe('입력 검증', () => {

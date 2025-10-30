@@ -544,7 +544,7 @@ describe('Platform 환경 검증', () => {
     });
 
     it('깊게 중첩된 디렉토리 삭제', () => {
-      let dir = createTempDirSafe('remove_deep_');
+      const dir = createTempDirSafe('remove_deep_');
       let current = dir;
 
       for (let i = 0; i < 5; i++) {
